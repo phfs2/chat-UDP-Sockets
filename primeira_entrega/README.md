@@ -1,7 +1,3 @@
-<div align="center">
-<img src="https://github.com/mikaellmiguel/Chat-UDP-Sockets/assets/144696910/b2494c37-e120-4b6c-a1a9-f0988699ea77" />
-</div>
-
 <h1 align="center">Chat UDP - Programação de Sockets</h1>   
     <h3 align="center">Redes de Computadores - 2025.1 CIn/UFPE - Equipe 5 
 
