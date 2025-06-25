@@ -11,6 +11,13 @@ BUFFER_SIZE = 1024                  # Tamanho do Buffer
 # Criação do SOCKET
 socketCliente = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+
+# Pritando os comandos que o usuário pode realizar
+print("""Comando           \t\t Ação
+hi, meu nome eh <username> \t Entrar na sala
+bye                        \t Sair da sala\n""")
+
+
 # Recepção de mensagensAdd commentMore actions
 def receberMsg():
     
@@ -39,7 +46,6 @@ def receberMsg():
 threadReceber = threading.Thread(target=receberMsg)
 threadReceber.start()
 
-
 # Armazena se o cliente está conectado a uma sala ou não
 conectado = False
 # Armazenará o nome do usuário
@@ -64,6 +70,12 @@ while True:
            
             except:  # Caso o usuário e entre na sala e saia sem mandar mensagens (Não existirá arquivo txt).
                 pass
+
+            print("""\nComando           \t\t AçãoAdd commentMore actions
+hi, meu nome eh <username> \t Entrar na sala
+bye                        \t Sair da sala\n""")
+
+
 
         # Quando o usuário quer enviar uma mensagem para os outros usuários
         else:

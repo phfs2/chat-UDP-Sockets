@@ -8,7 +8,7 @@
 
 <p align="center">
 <br />  
-    <a href="https://github.com/mikaellmiguel/Chat-UDP-Sockets"><strong>Ir para o repositório »</strong></a>
+    <a href="https://github.com/phfs2/Chat-UDP-Sockets"><strong>Ir para o repositório »</strong></a>
 <br />
 </p>
 
