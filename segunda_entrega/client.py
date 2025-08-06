@@ -34,7 +34,7 @@ def receberMsg():
 
             pacote, _ = socketCliente.recvfrom(BUFFER_SIZE)  # Recebendo o fragmento de mensagem
 
-            print(pacote)
+            #print(pacote)
 
             header = pacote[:HEADER_SIZE]
             payload = pacote[HEADER_SIZE:]
@@ -64,6 +64,12 @@ def receberMsg():
                     print("FALIED: ACK NUMBER INCORRETO")
                     # NÃO ESTOU FAZENDO NADA PORQUE EVENTUALMENTE O TIMER VAI ESTOURAR E REENVIAR O PACOTE
 
+                # Se o número de sequência do pacote for diferente do ack a ser enviado (Do seq number esperado) enviar um ACK (Possível ACK corrompido)
+
+                elif seq != ackToSend:
+
+                    socketCliente.sendto(makeAck(seqToSend, seq), SERVER_ADDR)  # Ignorar o pacote porque ele é uma retransmissão
+                
                 # Se for algum contéudo
                 else:
                     payload = payload.decode("ISO-8859-1")  # Decodificando o payload
@@ -111,11 +117,18 @@ while True:
             # Envia uma mensagem para o servidor informando que o cliente está saindo da sala
             enviarMsg(f'LOGOUT:{username}'.encode("ISO-8859-1"), socketCliente, SERVER_ADDR, seqToSend, ackToSend)
             enviarMsg('<EOF>'.encode("ISO-8859-1"), socketCliente, SERVER_ADDR, seqToSend, ackToSend)
-            
+
+            # Restaurando as váriaveis ao estado inicial (Caso queira se conectar novamente ao server)
+
+            seqToSend = 0
+
+            ackToSend =0
+
             #socketCliente.sendto(f"LOGOUT:{username}".encode(), SERVER_ADDR)
 
+            
             try:
-                os.remove(f'./primeira_entrega/dados/client/{username}.txt')  # Apagando o TXT associado ao usuário que saiu
+                os.remove(f'./segunda_entrega/dados/client/{username}.txt')  # Apagando o TXT associado ao usuário que saiu
 
             except:  # Caso o usuário e entre na sala e saia sem mandar mensagens (Não existirá arquivo txt).
                 pass
@@ -137,11 +150,14 @@ bye                        \t Sair da sala\n""")
                 # Enviando o arquivo em partes (chunks) do tamanho do BUFFER_SIZE
                 while chunks:= arquivoTxt.read(PAYLOAD_SIZE):
                     enviarMsg(chunks, socketCliente, SERVER_ADDR, seqToSend, ackToSend)
-                       # Informando para o servidor que a transimissão do arquivo terminou (EOF - End of File)
+
+
+                # Informando para o servidor que a transimissão do arquivo terminou (EOF - End of File)
                 enviarMsg('<EOF>'.encode("ISO-8859-1"), socketCliente, SERVER_ADDR, seqToSend, ackToSend)
 
     else:
-  # Quando o usuário quer entrar na sala
+
+        # Quando o usuário quer entrar na sala
         if mensagem.startswith("hi, meu nome eh "):
             username = mensagem[16:]  # Obtendo o username
             conectado = True
@@ -151,7 +167,7 @@ bye                        \t Sair da sala\n""")
             enviarMsg("<EOF>".encode("ISO-8859-1"), socketCliente, SERVER_ADDR, seqToSend, ackToSend)
 
 
-         # Quando o usuário quer sair sem estar conectado
+        # Quando o usuário quer sair sem estar conectado
         elif mensagem == 'bye' and conectado == False:
             print("Você não está conectado a sala")
 

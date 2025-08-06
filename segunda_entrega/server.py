@@ -43,7 +43,7 @@ def receberMsg():
         # Verificando se o pacote não é corrompido
         if isCorrupt(header, payload):
             print("FAILED: PACOTE CORROMPIDO")
-        
+
         else:
 
             payload = payload.decode('ISO-8859-1')  # Decodificando o payload
@@ -57,7 +57,7 @@ def receberMsg():
                 if payload.startswith("LOGIN:"):
                     # Colocar o usuário no dicionáio de clientes
                     clientes[clientAddr] = payload[6:]
-                    
+
                 # Pritando que o pacote foi recebido
                 print(f"INFO: PACOTE RECEBIDO DE {clientAddr} | SEQ = {seq} | PAYLOAD = '{payload}'")
 
@@ -67,7 +67,7 @@ def receberMsg():
 
                 # Pritando que o ACK foi enviado
                 print(f"INFO: ACK {clientesSeqAck[clientAddr][1]} ENVIADO PARA {clientAddr}")
-                
+
                 # Atualizando o ack que deverá ser enviado no próximo pacote
                 clientesSeqAck[clientAddr][1] = 1 if  clientesSeqAck[clientAddr][1] == 0 else 0
 
@@ -76,14 +76,14 @@ def receberMsg():
 
                     # Criando o arquivo TXT para mensagem no lado do servidor
                     caminhoTxt = converterToTxt(clientes[clientAddr], fullMensage, isServer=True)
-                    
+
                     # Pritando que a mensagem completa foi recebida
                     print(f"INFO: MENSAGEM COMPLETA RECEBIDA DE {clientAddr} SALVO EM: {caminhoTxt}\n")
                     filaMsg.put((caminhoTxt, clientAddr))
-                    
+
                     # Esvaziando o buffer para receber uma nova mensagem
                     fullMensage = ''
-                    
+
 
                 else:
 
@@ -91,11 +91,11 @@ def receberMsg():
 
             # Se o sequence number do pacote for diferente do ACK que é para ser enviado, é possivel se uma retransmissão
             elif payload and seq != clientesSeqAck[clientAddr][1]:
-                makeAck(clientesSeqAck[clientAddr][0], seq)  # Enviando o ACK do pacote recebido
+                socketServer.sendto(makeAck(clientesSeqAck[clientAddr][0], seq), clientAddr)  # Enviando o ACK do pacote recebido
 
             # Se a mensagem não tiver, um payload é um ack
             else:
-                
+
                 # Se o ack for realmente o esperado (Número de Sequência do último envio)
                 if ack == clientesSeqAck[clientAddr][0]:
 
@@ -117,26 +117,34 @@ def receberMsg():
 threadReceber = threading.Thread(target=receberMsg)
 threadReceber.start()
 
-def enviarMsg():
+def sender():
     while True:
         while not filaMsg.empty():
-            mensagem, clienteAddr = filaMsg.get()  # Obtendo a mensagem e o endereço da mensagem a ser enviada
 
-            # Quando o usuário que se conectar na sala.
+            caminhoTxt, clienteAddr = filaMsg.get()  # Obtendo a mensagem e o endereço da mensagem a ser enviada
+
+            with open(caminhoTxt) as file:
+                mensagem = file.read()
+
+            # Enviar mensagem de que usuário entrou na sala
             if  mensagem.startswith("LOGIN:"):
                 username = mensagem[6:]
                 clientes[clienteAddr] = username  # Adicionando o endereço e usuário no dicionário de clientes
                 sendToAll(f"{username} entrou na Sala", clientes) # Enviando a mensagem de entrada
+                sendToAll(f"{clientes[clienteAddr]} entrou na Sala", clientes) # Enviando a mensagem de entrada
 
-
+            
             # Quando o usuário coloca o BYE e envia a flag de quer ser desconctado da sala
             elif mensagem.startswith("LOGOUT:"):
                 username = clientes[clienteAddr] # Obtendo o username
                 del clientes[clienteAddr] # Deletando do dicionários para parar de receber mensagens
+                del clientesSeqAck[clienteAddr]
                 sendToAll(f"{username} saiu na Sala", clientes) # Enviando a mensagem de saída
 
+                print(F"INFO: {clienteAddr} SE DESCONTECTOU DA SALA | USERNAME: {username}")
+
                 try:
-                    os.remove(f'./primeira_entrega/dados/server/{username}.txt')  # Removendo os arquivos do usuário desconectado
+                    os.remove(f'./segunda_entrega/dados/server/{username}.txt')  # Removendo os arquivos do usuário desconectado
                 except:  # Caso o arquivo TXT não tenha sido Criado (Cenário que o Usuário se Conecta, não envia mensagem e sai da sala)
                     pass
 
@@ -146,16 +154,21 @@ def enviarMsg():
 
                 sendToAll(mensagemToSend, clientes) # Enviando a mensagem para todos os clientes
 
+
 # Função para enviar para todos que estiverem no chat
 def sendToAll(mensagem:str, clientes:dict):
 
     mensagem = mensagem.encode('ISO-8859-1')
 
     for cliente in clientes:
-        for i in range(0, len(mensagem), BUFFER_SIZE):
-            socketServer.sendto(mensagem[i:i+BUFFER_SIZE], cliente)
+        for i in range(0, len(mensagem),  PAYLOAD_SIZE):
+            print(f"INFO: ENVIANDO PACOTE PARA {cliente} | SEQ = {clientesSeqAck[cliente][0]} | PAYLOAD = '{mensagem[i:i+BUFFER_SIZE-4].decode('ISO-8859-1')}'")
+            enviarMsg(mensagem[i:i+BUFFER_SIZE-4], socketServer, cliente, clientesSeqAck[cliente][0], clientesSeqAck[cliente][1])
+            
+        print(f"INFO: ENVIANDO PACOTE PARA {cliente} | SEQ = {clientesSeqAck[cliente][0]} | PAYLOAD = '<EOF>'")
+        enviarMsg("<EOF>".encode("ISO-8859-1"), socketServer, cliente, clientesSeqAck[cliente][0], clientesSeqAck[cliente][1])
 
-        socketServer.sendto('<EOF>'.encode(), cliente)
 
 # Criação da Thread para recibimento
-threadEnviar = threading.Thread(target=enviarMsg)
+threadEnviar = threading.Thread(target=sender)
+threadEnviar.start()
