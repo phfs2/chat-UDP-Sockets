@@ -17,9 +17,6 @@ Criação de Chat através do protocolo UDP com programação de Sockets em Pyth
 
 <h3 align="center">Vídeo - Apresentação do Projeto - RDT (Em breve)
 
-<a href=""><img src="" /></a>
-
-
 ## Requesitos Mínimos ⚠️
 * Estar em um ambiente desktop 🖥️
 * Ter o Python instalado
